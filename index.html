@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的个人博客</title>
+    <!-- 字体与图标库 (Font Awesome 用作辅助, 但主要图标使用 SVG) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* ----- 全局重置 & 基础 ----- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+            background: #fafafa;
+            color: #1e1e1e;
+            line-height: 1.6;
+            padding: 0 20px;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: #ffffff;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.04);
+            border-radius: 24px;
+            padding: 30px 30px 10px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* ----- 顶部横幅图片 ----- */
+        .hero-image {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, #e0e7ff, #f0f4ff);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: 300;
+            color: #1e3a8a;
+            margin-bottom: 30px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none"><polygon points="0,0 100,0 80,100 0,100" fill="%23dbeafe" opacity="0.4"/></svg>');
+            background-size: cover;
+            background-blend-mode: overlay;
+        }
+        .hero-image span {
+            background: rgba(255,255,255,0.7);
+            padding: 8px 28px;
+            border-radius: 60px;
+            backdrop-filter: blur(4px);
+        }
+
+        /* ----- 顶部导航 (主页/文章/关于/资料/404) ----- */
+        .top-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 28px;
+            border-bottom: 1px solid #eaeef2;
+            padding-bottom: 18px;
+            margin-bottom: 28px;
+            font-weight: 500;
+        }
+        .top-nav a {
+            color: #1f2937;
+            font-size: 1.05rem;
+            padding: 4px 0;
+            border-bottom: 2px solid transparent;
+            transition: 0.15s;
+        }
+        .top-nav a:hover {
+            border-bottom-color: #2563eb;
+            text-decoration: none;
+        }
+        .top-nav a.active {
+            border-bottom-color: #2563eb;
+            color: #2563eb;
+        }
+
+        /* ----- 社交图标 (SVG) 行 ----- */
+        .social-bar {
+            display: flex;
+            gap: 20px;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+        .social-bar a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: #f1f5f9;
+            transition: 0.2s;
+            color: #1e293b;
+        }
+        .social-bar a:hover {
+            background: #dbeafe;
+            transform: translateY(-2px);
+        }
+        .social-bar svg {
+            width: 22px;
+            height: 22px;
+            stroke: currentColor;
+            fill: none;
+        }
+        /* 为特定平台填充颜色 (可选) */
+        .social-bar .bilibili svg { color: #00a1d6; }
+        .social-bar .github svg { color: #181717; }
+        .social-bar .youtube svg { color: #ff0000; }
+        .social-bar .wechat svg { color: #07c160; }
+
+        /* ----- 布局: 搜索 + 分类 ----- */
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 30px;
+            background: #f8fafc;
+            padding: 12px 20px;
+            border-radius: 60px;
+        }
+        .search-box {
+            display: flex;
+            align-items: center;
+            flex: 1 1 240px;
+            background: white;
+            border-radius: 40px;
+            padding: 4px 12px 4px 18px;
+            border: 1px solid #e2e8f0;
+        }
+        .search-box input {
+            border: none;
+            outline: none;
+            background: transparent;
+            padding: 8px 0;
+            width: 100%;
+            font-size: 0.95rem;
+        }
+        .search-box button {
+            background: none;
+            border: none;
+            color: #64748b;
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 6px 8px;
+        }
+        .category-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 16px;
+            align-items: center;
+        }
+        .category-tags .cat-label {
+            color: #475569;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        .category-tags a {
+            background: white;
+            padding: 4px 16px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            border: 1px solid #e2e8f0;
+            color: #1e293b;
+            transition: 0.15s;
+        }
+        .category-tags a:hover {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+            text-decoration: none;
+        }
+
+        /* ----- 文章列表 (主页) ----- */
+        .post-list {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            margin: 30px 0 20px;
+        }
+        .post-item {
+            border-bottom: 1px solid #edf2f7;
+            padding-bottom: 20px;
+        }
+        .post-item:last-child {
+            border-bottom: none;
+        }
+        .post-item h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .post-item h3 a {
+            color: #0f172a;
+        }
+        .post-item h3 a:hover {
+            color: #2563eb;
+            text-decoration: none;
+        }
+        .post-meta {
+            color: #64748b;
+            font-size: 0.9rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 20px;
+            margin: 6px 0 10px;
+        }
+        .post-excerpt {
+            color: #334155;
+        }
+        .post-tags {
+            margin-top: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .post-tags span {
+            background: #f1f5f9;
+            padding: 0 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: #475569;
+        }
+
+        /* ----- 文章详情 (模拟) ----- */
+        .article-page {
+            display: none;
+        }
+        .article-page.active {
+            display: block;
+        }
+        .article-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        .article-content {
+            margin: 25px 0;
+            font-size: 1.05rem;
+        }
+        .article-content p {
+            margin-bottom: 16px;
+        }
+        .article-content blockquote {
+            border-left: 4px solid #2563eb;
+            padding-left: 20px;
+            color: #334155;
+            background: #f8fafc;
+            padding: 12px 20px;
+            border-radius: 8px;
+        }
+
+        /* ----- 评论区 ----- */
+        .comment-section {
+            margin-top: 48px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 30px;
+        }
+        .comment-section h4 {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+        }
+        .comment-form {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            max-width: 600px;
+        }
+        .comment-form input,
+        .comment-form textarea {
+            padding: 12px 16px;
+            border: 1px solid #d1d9e6;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            background: white;
+            transition: 0.15s;
+        }
+        .comment-form input:focus,
+        .comment-form textarea:focus {
+            border-color: #2563eb;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+        .comment-form button {
+            align-self: flex-start;
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 32px;
+            border-radius: 40px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+        .comment-form button:hover {
+            background: #1d4ed8;
+        }
+        .comment-list {
+            margin-top: 30px;
+        }
+        .comment-item {
+            background: #f8fafc;
+            padding: 16px 20px;
+            border-radius: 16px;
+            margin-bottom: 14px;
+        }
+        .comment-item strong {
+            color: #0f172a;
+        }
+        .comment-item .time {
+            color: #94a3b8;
+            font-size: 0.8rem;
+            margin-left: 14px;
+        }
+
+        /* ----- 页面切换 (about, 资料, 404) ----- */
+        .page {
+            display: none;
+            padding: 20px 0;
+        }
+        .page.active {
+            display: block;
+        }
+
+        /* ----- 返回顶部 ----- */
+        #backTop {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: white;
+            border: 1px solid #d1d9e6;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            cursor: pointer;
+            transition: 0.2s;
+            color: #1e293b;
+            z-index: 999;
+            opacity: 0;
+            pointer-events: none;
+        }
+        #backTop.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #backTop:hover {
+            background: #f1f5f9;
+            transform: scale(1.05);
+        }
+
+        /* ----- 字体设置 (通过按钮切换) ----- */
+        .font-control {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            margin-left: 10px;
+        }
+        .font-control button {
+            background: #f1f5f9;
+            border: none;
+            border-radius: 30px;
+            padding: 2px 14px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .font-control button.active {
+            background: #2563eb;
+            color: white;
+        }
+
+        /* ----- 后台管理 (隐藏) ----- */
+        .admin-panel {
+            display: none;
+            margin-top: 40px;
+            padding: 30px;
+            background: #f1f5f9;
+            border-radius: 24px;
+        }
+        .admin-panel.open {
+            display: block;
+        }
+        .admin-login {
+            max-width: 360px;
+            margin: 20px auto;
+        }
+        .admin-login input {
+            display: block;
+            width: 100%;
+            margin-bottom: 12px;
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+        }
+        .admin-login button {
+            background: #0f172a;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 40px;
+            cursor: pointer;
+        }
+        .admin-dashboard {
+            display: none;
+        }
+        .admin-dashboard.open {
+            display: block;
+        }
+
+        /* ----- 版权 ----- */
+        .footer {
+            margin-top: 50px;
+            padding-top: 24px;
+            border-top: 1px solid #eaeef2;
+            text-align: center;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        /* ----- 响应式 (移动端) ----- */
+        @media (max-width: 640px) {
+            .container { padding: 16px; margin: 10px; }
+            .hero-image { height: 130px; font-size: 1.2rem; }
+            .top-nav { gap: 6px 16px; }
+            .social-bar { justify-content: center; }
+            .toolbar { flex-direction: column; align-items: stretch; border-radius: 30px; }
+            .search-box { flex: 1; }
+            .category-tags { justify-content: center; }
+            .post-item h3 { font-size: 1.25rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="app">
+
+    <!-- ===== 顶部横幅 ===== -->
+    <div class="hero-image">
+        <span>📖 书写 · 思考 · 分享</span>
+    </div>
+
+    <!-- ===== 社交图标 (SVG) ===== -->
+    <div class="social-bar">
+        <!-- B站 -->
+        <a href="#" class="bilibili" title="B站空间">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.813 4.653h.854l1.52 1.52v10.907l-1.52 1.52H5.853l-1.52-1.52V6.173l1.52-1.52h.853l1.707 1.707 1.707-1.707h2.56l1.707 1.707 1.707-1.707zm-9.387 2.56H5.853v9.387h12.293V7.213h-2.56l-1.707 1.707-1.707-1.707H8.426zm.853 4.267v2.56H7.573v-2.56h1.707zm6.827 0v2.56h-1.707v-2.56h1.707z"/></svg>
+        </a>
+        <!-- GitHub -->
+        <a href="#" class="github" title="GitHub">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.15 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.62.24 2.85.12 3.15.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        </a>
+        <!-- YouTube -->
+        <a href="#" class="youtube" title="YouTube">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a2.97 2.97 0 00-2.093-2.106C19.694 3.5 12 3.5 12 3.5s-7.694 0-9.405.58A2.97 2.97 0 00.502 6.186C0 7.899 0 12 0 12s0 4.101.502 5.814a2.97 2.97 0 002.093 2.106C4.306 20.5 12 20.5 12 20.5s7.694 0 9.405-.58a2.97 2.97 0 002.093-2.106C24 16.101 24 12 24 12s0-4.101-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+        </a>
+        <!-- 公众号 (微信) -->
+        <a href="#" class="wechat" title="公众号">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 01.213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 00.167-.054l1.903-1.114a.864.864 0 01.717-.098 10.16 10.16 0 002.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.802 0 1.452.636 1.452 1.42 0 .783-.65 1.42-1.452 1.42s-1.452-.637-1.452-1.42c0-.784.65-1.42 1.452-1.42zm5.812 0c.802 0 1.452.636 1.452 1.42 0 .783-.65 1.42-1.452 1.42s-1.452-.637-1.452-1.42c0-.784.65-1.42 1.452-1.42zm6.34 3.552c-3.12 0-5.651 2.334-5.651 5.215 0 2.88 2.531 5.215 5.651 5.215.835 0 1.64-.168 2.367-.465a.738.738 0 01.606.083l1.598.935a.28.28 0 00.142.046.248.248 0 00.247-.25c0-.063-.025-.124-.041-.184l-.327-1.238a.504.504 0 01.183-.568c1.488-1.076 2.43-2.629 2.43-4.374 0-2.881-2.531-5.215-5.65-5.215zm-2.49 3.358c.682 0 1.235.54 1.235 1.207 0 .667-.553 1.207-1.235 1.207s-1.235-.54-1.235-1.207c0-.667.553-1.207 1.235-1.207zm4.98 0c.682 0 1.235.54 1.235 1.207 0 .667-.553 1.207-1.235 1.207s-1.235-.54-1.235-1.207c0-.667.553-1.207 1.235-1.207z"/></svg>
+        </a>
+    </div>
+
+    <!-- ===== 导航 ===== -->
+    <nav class="top-nav" id="mainNav">
+        <a href="#" class="active" data-page="home">主页</a>
+        <a href="#" data-page="articles">文章</a>
+        <a href="#" data-page="about">关于</a>
+        <a href="#" data-page="resources">资料</a>
+        <a href="#" data-page="page404">404 Page</a>
+        <!-- 字体控制 -->
+        <span style="flex:1"></span>
+        <span class="font-control">
+            <button data-font="default" class="active">默认</button>
+            <button data-font="serif">衬线</button>
+            <button data-font="sans">无衬线</button>
+        </span>
+    </nav>
+
+    <!-- ===== 工具栏: 搜索 & 分类 ===== -->
+    <div class="toolbar">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="搜索文章..." aria-label="搜索">
+            <button id="searchBtn"><i class="fas fa-search"></i></button>
+        </div>
+        <div class="category-tags">
+            <span class="cat-label">分类：</span>
+            <a href="#" data-cat="tech">技术</a>
+            <a href="#" data-cat="life">生活</a>
+            <a href="#" data-cat="thinking">思考</a>
+            <a href="#" data-cat="all" class="active">全部</a>
+        </div>
+    </div>
+
+    <!-- ===== 主页: 文章列表 ===== -->
+    <div id="homePage" class="page active">
+        <div class="post-list" id="postList">
+            <!-- 由 JS 动态渲染 -->
+        </div>
+    </div>
+
+    <!-- ===== 文章详情页 (隐藏) ===== -->
+    <div id="articlePage" class="article-page">
+        <div class="article-title" id="articleTitle">文章标题</div>
+        <div class="post-meta" id="articleMeta"><span>2026-07-18</span> <span># 技术</span></div>
+        <div class="article-content" id="articleContent">
+            <p>文章内容将在这里显示。</p>
+        </div>
+        <!-- 评论区 -->
+        <div class="comment-section" id="commentSection">
+            <h4>💬 评论区</h4>
+            <div class="comment-form">
+                <input type="text" id="commentUser" placeholder="你的昵称 (首次请创建, 不可重复)" />
+                <textarea id="commentText" rows="3" placeholder="写下你的想法..."></textarea>
+                <button id="submitComment">发布评论</button>
+            </div>
+            <div class="comment-list" id="commentList">
+                <!-- 动态渲染 -->
+            </div>
+        </div>
+        <button onclick="closeArticle()" style="margin-top:20px; background:#eef2f6; border:none; padding:8px 24px; border-radius:40px; cursor:pointer;">← 返回列表</button>
+    </div>
+
+    <!-- ===== 其他页面: 关于, 资料, 404 ===== -->
+    <div id="aboutPage" class="page">
+        <h2>关于我</h2>
+        <p style="margin-top:16px;">这里是关于页面。可以填写个人介绍、博客宗旨等。</p>
+        <p>联系方式：example@mail.com</p>
+    </div>
+    <div id="resourcesPage" class="page">
+        <h2>资料下载</h2>
+        <p style="margin-top:16px;">分享一些有用的资料、电子书或工具链接。</p>
+        <ul style="margin-top:12px; list-style:disc; padding-left:24px;">
+            <li><a href="#">《Web 开发指南》PDF</a></li>
+            <li><a href="#">设计素材包</a></li>
+        </ul>
+    </div>
+    <div id="page404Page" class="page">
+        <h2>404</h2>
+        <p style="margin-top:16px; font-size:3rem; text-align:center;">🕵️ 页面走丢了</p>
+        <p style="text-align:center;">你访问的页面不存在，返回 <a href="#" onclick="navigateTo('home')">主页</a></p>
+    </div>
+
+    <!-- ===== 后台管理 (隐藏) ===== -->
+    <div style="text-align:right; margin-top:20px;">
+        <button onclick="toggleAdmin()" style="background:transparent; border:1px solid #d1d9e6; padding:4px 18px; border-radius:30px; cursor:pointer; font-size:0.8rem;">🔐 后台</button>
+    </div>
+    <div class="admin-panel" id="adminPanel">
+        <div class="admin-login" id="adminLogin">
+            <h4>管理员登录</h4>
+            <input type="text" id="adminUser" placeholder="账户" value="admin">
+            <input type="password" id="adminPass" placeholder="密码" value="123456">
+            <button onclick="adminLogin()">登录</button>
+        </div>
+        <div class="admin-dashboard" id="adminDashboard">
+            <h4>📊 管理仪表盘</h4>
+            <p><strong>浏览数：</strong> <span id="viewCount">0</span></p>
+            <p><strong>评论列表：</strong></p>
+            <div id="adminComments" style="max-height:200px; overflow-y:auto; background:white; padding:10px; border-radius:12px;"></div>
+            <hr style="margin:16px 0;">
+            <p><strong>编辑文章：</strong> (点击文章标题可编辑)</p>
+            <div id="adminPostList"></div>
+            <button onclick="logoutAdmin()" style="margin-top:16px; background:#e11d48; color:white; border:none; padding:6px 24px; border-radius:40px; cursor:pointer;">退出</button>
+        </div>
+    </div>
+
+    <!-- ===== 版权 ===== -->
+    <div class="footer">
+        © 2026 我的个人博客 · 保留所有权利
+    </div>
+</div>
+
+<!-- ===== 返回顶部按钮 ===== -->
+<div id="backTop" onclick="window.scrollTo({top:0,behavior:'smooth'});">↑</div>
+
+<script>
+    (function() {
+        "use strict";
+
+        // ----- 数据模拟 (文章、评论等) -----
+        const posts = [
+            { id: 1, title: 'Hugo 主题开发入门', date: '2026-07-15', category: 'tech', excerpt: '从零开始构建一个极简的 Hugo 主题，涵盖模板、短代码和资源管道。', tags: ['Hugo', 'Go'], content: '<p>Hugo 是一个用 Go 语言编写的静态站点生成器，速度极快。本文将带你了解主题的基本结构...</p><blockquote>“静态站点，动态思维。”</blockquote><p>继续深入，我们会学习如何自定义列表页和单页模板。</p>' },
+            { id: 2, title: '城市漫步：老城区的午后', date: '2026-07-12', category: 'life', excerpt: '在午后的阳光里，穿行于老城区的街巷，感受时间的痕迹。', tags: ['城市', '摄影'], content: '<p>周六下午，带着相机出门。老城区的建筑大多有七八十年的历史...</p><p>街角的咖啡馆飘出香味，猫在墙头打盹。</p>' },
+            { id: 3, title: '关于“意义”的碎片思考', date: '2026-07-08', category: 'thinking', excerpt: '一些关于生活意义、创作与存在的零散笔记。', tags: ['哲学', '随笔'], content: '<p>我们常常追问意义，但意义或许就藏在追问的过程里。</p><p>写作是一种整理，也是一种抵抗遗忘的方式。</p>' }
+        ];
+
+        // 评论数据 (按文章ID存储)
+        let commentsData = {
+            1: [
+                { user: 'Alice', time: '2026-07-16 10:23', text: '很棒的教程！期待后续。' },
+                { user: 'Bob', time: '2026-07-16 14:05', text: '学习了，感谢分享。' }
+            ],
+            2: [],
+            3: []
+        };
+
+        // 浏览数 (按文章ID)
+        let views = { 1: 42, 2: 18, 3: 27 };
+
+        // 当前选中的文章ID
+        let currentArticleId = 1;
+        // 当前页面
+        let currentPage = 'home';
+
+        // 管理员凭证 (硬编码)
+        const ADMIN_CRED = { user: 'admin', pass: '123456' };
+
+        // ----- DOM 引用 -----
+        const postListEl = document.getElementById('postList');
+        const homePage = document.getElementById('homePage');
+        const articlePage = document.getElementById('articlePage');
+        const articleTitle = document.getElementById('articleTitle');
+        const articleMeta = document.getElementById('articleMeta');
+        const articleContent = document.getElementById('articleContent');
+        const commentList = document.getElementById('commentList');
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const categoryLinks = document.querySelectorAll('.category-tags a');
+        const navLinks = document.querySelectorAll('.top-nav a[data-page]');
+        const backTop = document.getElementById('backTop');
+
+        // ----- 渲染函数 -----
+        function renderPosts(filter = 'all', keyword = '') {
+            let filtered = posts;
+            if (filter !== 'all') {
+                filtered = filtered.filter(p => p.category === filter);
+            }
+            if (keyword.trim() !== '') {
+                const kw = keyword.trim().toLowerCase();
+                filtered = filtered.filter(p => 
+                    p.title.toLowerCase().includes(kw) || 
+                    p.excerpt.toLowerCase().includes(kw) ||
+                    p.tags.some(t => t.toLowerCase().includes(kw))
+                );
+            }
+            if (filtered.length === 0) {
+                postListEl.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:30px 0;">没有找到文章</p>';
+                return;
+            }
+            let html = '';
+            filtered.forEach(p => {
+                html += `
+                    <div class="post-item">
+                        <h3><a href="#" onclick="openArticle(${p.id}); return false;">${p.title}</a></h3>
+                        <div class="post-meta">
+                            <span>📅 ${p.date}</span>
+                            <span>🏷️ ${p.category}</span>
+                            <span>👁️ ${views[p.id] || 0} 次浏览</span>
+                        </div>
+                        <div class="post-excerpt">${p.excerpt}</div>
+                        <div class="post-tags">${p.tags.map(t => `<span>#${t}</span>`).join('')}</div>
+                    </div>
+                `;
+            });
+            postListEl.innerHTML = html;
+        }
+
+        function renderComments(articleId) {
+            const comments = commentsData[articleId] || [];
+            if (comments.length === 0) {
+                commentList.innerHTML = '<p style="color:#94a3b8;">暂无评论，来说两句吧。</p>';
+                return;
+            }
+            let html = '';
+            comments.forEach(c => {
+                html += `<div class="comment-item"><strong>${c.user}</strong><span class="time">${c.time}</span><p style="margin-top:4px;">${c.text}</p></div>`;
+            });
+            commentList.innerHTML = html;
+        }
+
+        function openArticle(id) {
+            const post = posts.find(p => p.id === id);
+            if (!post) return;
+            currentArticleId = id;
+            // 增加浏览数
+            views[id] = (views[id] || 0) + 1;
+            // 更新视图
+            homePage.classList.remove('active');
+            articlePage.classList.add('active');
+            document.querySelectorAll('.top-nav a[data-page]').forEach(a => a.classList.remove('active'));
+            // 填充内容
+            articleTitle.textContent = post.title;
+            articleMeta.innerHTML = `<span>${post.date}</span> <span># ${post.category}</span> <span>👁️ ${views[id]} 次浏览</span>`;
+            articleContent.innerHTML = post.content;
+            renderComments(id);
+            // 滚动到顶部
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        window.openArticle = openArticle;
+
+        function closeArticle() {
+            articlePage.classList.remove('active');
+            homePage.classList.add('active');
+            document.querySelectorAll('.top-nav a[data-page]').forEach(a => a.classList.remove('active'));
+            document.querySelector('.top-nav a[data-page="home"]').classList.add('active');
+            currentPage = 'home';
+        }
+        window.closeArticle = closeArticle;
+
+        function navigateTo(page) {
+            // 隐藏所有页面
+            document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+            articlePage.classList.remove('active');
+            if (page === 'home') {
+                homePage.classList.add('active');
+                renderPosts(currentCategory, searchInput.value);
+            } else if (page === 'articles') {
+                // 文章页就是主页的文章列表，但为了导航高亮，我们展示主页
+                homePage.classList.add('active');
+                renderPosts(currentCategory, searchInput.value);
+            } else if (page === 'about') {
+                document.getElementById('aboutPage').classList.add('active');
+            } else if (page === 'resources') {
+                document.getElementById('resourcesPage').classList.add('active');
+            } else if (page === 'page404') {
+                document.getElementById('page404Page').classList.add('active');
+            }
+            // 更新导航高亮
+            document.querySelectorAll('.top-nav a[data-page]').forEach(a => a.classList.remove('active'));
+            document.querySelector(`.top-nav a[data-page="${page}"]`)?.classList.add('active');
+            currentPage = page;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        window.navigateTo = navigateTo;
+
+        // ----- 分类 & 搜索 -----
+        let currentCategory = 'all';
+        categoryLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                categoryLinks.forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+                currentCategory = this.dataset.cat;
+                if (homePage.classList.contains('active')) {
+                    renderPosts(currentCategory, searchInput.value);
+                }
+            });
+        });
+
+        function doSearch() {
+            const kw = searchInput.value;
+            if (homePage.classList.contains('active')) {
+                renderPosts(currentCategory, kw);
+            }
+        }
+        searchBtn.addEventListener('click', doSearch);
+        searchInput.addEventListener('keyup', function(e) { if (e.key === 'Enter') doSearch(); });
+
+        // ----- 导航切换 -----
+        navLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const page = this.dataset.page;
+                navigateTo(page);
+            });
+        });
+
+        // ----- 评论提交 (基于IP识别 + 昵称唯一) -----
+        document.getElementById('submitComment').addEventListener('click', function() {
+            const userInput = document.getElementById('commentUser');
+            const textInput = document.getElementById('commentText');
+            const user = userInput.value.trim();
+            const text = textInput.value.trim();
+            if (!user || !text) {
+                alert('请填写昵称和评论内容。');
+                return;
+            }
+            // 模拟IP (用随机数代替)
+            const fakeIP = '192.168.' + Math.floor(Math.random()*255) + '.' + Math.floor(Math.random()*255);
+            // 检查昵称是否已被使用 (在当前文章评论中)
+            const comments = commentsData[currentArticleId] || [];
+            if (comments.some(c => c.user === user)) {
+                alert('该昵称已被使用，请换一个。');
+                return;
+            }
+            const now = new Date();
+            const timeStr = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0')+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+            comments.push({ user, time: timeStr, text, ip: fakeIP });
+            commentsData[currentArticleId] = comments;
+            renderComments(currentArticleId);
+            textInput.value = '';
+            // 提示
+            alert('评论发布成功！');
+        });
+
+        // ----- 返回顶部 (滚动控制) -----
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 300) {
+                backTop.classList.add('show');
+            } else {
+                backTop.classList.remove('show');
+            }
+        });
+
+        // ----- 字体切换 -----
+        document.querySelectorAll('.font-control button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.font-control button').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                const font = this.dataset.font;
+                if (font === 'serif') {
+                    document.body.style.fontFamily = 'Georgia, "Times New Roman", serif';
+                } else if (font === 'sans') {
+                    document.body.style.fontFamily = '"Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+                } else {
+                    document.body.style.fontFamily = '';
+                }
+            });
+        });
+
+        // ----- 后台管理 -----
+        window.toggleAdmin = function() {
+            const panel = document.getElementById('adminPanel');
+            panel.classList.toggle('open');
+            if (panel.classList.contains('open')) {
+                // 如果已登录则显示仪表盘
+                if (sessionStorage.getItem('adminLogged') === 'true') {
+                    document.getElementById('adminLogin').style.display = 'none';
+                    document.getElementById('adminDashboard').classList.add('open');
+                    updateAdminDashboard();
+                } else {
+                    document.getElementById('adminLogin').style.display = 'block';
+                    document.getElementById('adminDashboard').classList.remove('open');
+                }
+            }
+        };
+
+        window.adminLogin = function() {
+            const user = document.getElementById('adminUser').value;
+            const pass = document.getElementById('adminPass').value;
+            if (user === ADMIN_CRED.user && pass === ADMIN_CRED.pass) {
+                sessionStorage.setItem('adminLogged', 'true');
+                document.getElementById('adminLogin').style.display = 'none';
+                document.getElementById('adminDashboard').classList.add('open');
+                updateAdminDashboard();
+            } else {
+                alert('账户或密码错误');
+            }
+        };
+
+        function updateAdminDashboard() {
+            // 浏览数汇总
+            let totalViews = 0;
+            for (let k in views) totalViews += views[k];
+            document.getElementById('viewCount').textContent = totalViews;
+            // 评论列表
+            let allComments = [];
+            for (let k in commentsData) {
+                commentsData[k].forEach(c => {
+                    allComments.push({ ...c, articleId: k });
+                });
+            }
+            const adminCommentsEl = document.getElementById('adminComments');
+            if (allComments.length === 0) {
+                adminCommentsEl.innerHTML = '<p>暂无评论</p>';
+            } else {
+                let html = '';
+                allComments.forEach(c => {
+                    html += `<div style="border-bottom:1px solid #e2e8f0; padding:6px 0;"><strong>${c.user}</strong> (文章 ${c.articleId})：${c.text} <span style="color:#94a3b8;font-size:0.8rem;">${c.time}</span></div>`;
+                });
+                adminCommentsEl.innerHTML = html;
+            }
+            // 文章列表 (可编辑)
+            const adminPostList = document.getElementById('adminPostList');
+            let postHtml = '';
+            posts.forEach(p => {
+                postHtml += `<div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #eef2f6;">
+                    <span>${p.title}</span>
+                    <span>
+                        <button onclick="editPost(${p.id})" style="background:#2563eb; color:white; border:none; padding:2px 14px; border-radius:30px; cursor:pointer;">编辑</button>
+                    </span>
+                </div>`;
+            });
+            adminPostList.innerHTML = postHtml;
+        }
+
+        window.editPost = function(id) {
+            const post = posts.find(p => p.id === id);
+            if (!post) return;
+            const newTitle = prompt('修改标题：', post.title);
+            if (newTitle !== null && newTitle.trim() !== '') post.title = newTitle.trim();
+            const newContent = prompt('修改内容 (支持HTML)：', post.content);
+            if (newContent !== null) post.content = newContent;
+            // 刷新列表
+            updateAdminDashboard();
+            // 如果当前打开的是这篇文章，刷新显示
+            if (currentArticleId === id && articlePage.classList.contains('active')) {
+                openArticle(id);
+            }
+            if (homePage.classList.contains('active')) {
+                renderPosts(currentCategory, searchInput.value);
+            }
+            alert('文章已更新！');
+        };
+
+        window.logoutAdmin = function() {
+            sessionStorage.removeItem('adminLogged');
+            document.getElementById('adminLogin').style.display = 'block';
+            document.getElementById('adminDashboard').classList.remove('open');
+            document.getElementById('adminPanel').classList.remove('open');
+        };
+
+        // ----- 初始化 -----
+        renderPosts('all', '');
+        // 默认主页高亮
+        document.querySelector('.top-nav a[data-page="home"]').classList.add('active');
+        // 如果之前有登录状态
+        if (sessionStorage.getItem('adminLogged') === 'true') {
+            // 不自动打开面板，但保留状态
+        }
+
+        // 响应式: 监听resize (仅用于演示)
+        window.addEventListener('resize', function() {
+            // 可添加额外响应式逻辑
+        });
+
+    })();
+</script>
+
+</body>
+</html>
