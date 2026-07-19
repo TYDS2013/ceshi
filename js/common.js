@@ -164,3 +164,19 @@ function logoutUser() {
 // 但此函数在 common.js 中并非必须，可保留为占位，实际上 admin.js 已独立初始化。
 // 如果需要，可保留空函数或由 admin.js 自行处理。
 // 为减少冗余，此处不再重复 initDefaultUser。
+
+
+// ----- 隐藏加载动画 -----
+window.addEventListener('load', function() {
+    const loader = document.getElementById('loader');
+    if (loader) {
+        setTimeout(() => {
+            loader.classList.add('hidden');
+        }, 300); // 延迟 300ms 让过渡更平滑
+    }
+});
+// 若 load 事件已触发（缓存情况），直接隐藏
+if (document.readyState === 'complete') {
+    const loader = document.getElementById('loader');
+    if (loader) loader.classList.add('hidden');
+}
