@@ -351,3 +351,164 @@ window.closeEditor = closeEditor;
 window.savePost = savePost;
 window.deletePost = deletePost;
 window.saveConfig = saveConfig;
+
+// 插入 Markdown 语法到编辑器
+function insertMarkdown(prefix, suffix) {
+    const textarea = document.getElementById('editContent');
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = textarea.value.substring(start, end);
+    const before = textarea.value.substring(0, start);
+    const after = textarea.value.substring(end);
+    // 如果选中内容，则包裹；否则只插入前缀
+    let insertText = selected ? prefix + selected + suffix : prefix + suffix;
+    textarea.value = before + insertText + after;
+    // 重置光标位置（在插入内容之后）
+    const newCursor = start + insertText.length;
+    textarea.selectionStart = textarea.selectionEnd = newCursor;
+    textarea.focus();
+    // 触发预览更新
+    updatePreview();
+}
+
+
+
+// =====================================================
+// Markdown 编辑器工具栏与键盘快捷键支持
+// =====================================================
+
+/**
+ * 在编辑器中插入 Markdown 语法（供工具栏按钮调用）
+ * @param {string} prefix - 插入的前缀（如 '**'）
+ * @param {string} suffix - 插入的后缀（如 '**'）
+ * @param {boolean} wrapLine - 是否作为行包裹（如标题、列表）
+ */
+function insertMarkdown(prefix, suffix, wrapLine = false) {
+    const textarea = document.getElementById('editContent');
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = textarea.value.substring(start, end);
+    const before = textarea.value.substring(0, start);
+    const after = textarea.value.substring(end);
+
+    let insertText = '';
+    if (wrapLine) {
+        // 标题、列表等放在行首，并换行
+        const lineStart = before.lastIndexOf('\n') + 1;
+        const lineEnd = after.indexOf('\n') !== -1 ? after.indexOf('\n') + 1 : after.length;
+        const lineContent = before.substring(lineStart) + selected + after.substring(0, lineEnd);
+        // 简单处理：插入前缀+原有行内容（去除原有前缀？简化实现）
+        // 更简单：直接在前面插入，不处理已有内容
+        insertText = prefix + selected + suffix;
+    } else {
+        // 包裹选中文本，若无选中则插入前后缀
+        insertText = selected ? prefix + selected + suffix : prefix + suffix;
+    }
+
+    // 替换内容
+    textarea.value = before + insertText + after;
+    // 设置光标位置
+    const newCursor = start + insertText.length;
+    textarea.selectionStart = textarea.selectionEnd = newCursor;
+    textarea.focus();
+    // 触发预览更新
+    if (typeof updatePreview === 'function') updatePreview();
+}
+
+// ---------- 键盘快捷键监听 ----------
+document.addEventListener('keydown', function(e) {
+    // 仅在编辑器模态框打开且编辑框获得焦点时生效
+    const modal = document.getElementById('editorModal');
+    const textarea = document.getElementById('editContent');
+    if (!modal || !modal.classList.contains('open')) return;
+    if (document.activeElement !== textarea) return;
+
+    const ctrl = e.ctrlKey || e.metaKey;
+    const shift = e.shiftKey;
+
+    // Ctrl+B 加粗
+    if (ctrl && e.key === 'b') {
+        e.preventDefault();
+        insertMarkdown('**', '**');
+        return;
+    }
+    // Ctrl+I 斜体
+    if (ctrl && e.key === 'i') {
+        e.preventDefault();
+        insertMarkdown('*', '*');
+        return;
+    }
+    // Ctrl+Shift+1 标题1
+    if (ctrl && shift && e.key === '1') {
+        e.preventDefault();
+        // 在行首插入 '# '
+        const textarea2 = document.getElementById('editContent');
+        const start2 = textarea2.selectionStart;
+        const before2 = textarea2.value.substring(0, start2);
+        // 找到当前行的开头
+        const lineStart = before2.lastIndexOf('\n') + 1;
+        const lineContent = textarea2.value.substring(lineStart);
+        const newText = before2.substring(0, lineStart) + '# ' + lineContent;
+        textarea2.value = newText;
+        textarea2.selectionStart = textarea2.selectionEnd = lineStart + 2;
+        textarea2.focus();
+        updatePreview();
+        return;
+    }
+    // Ctrl+Shift+2 标题2
+    if (ctrl && shift && e.key === '2') {
+        e.preventDefault();
+        const textarea2 = document.getElementById('editContent');
+        const start2 = textarea2.selectionStart;
+        const before2 = textarea2.value.substring(0, start2);
+        const lineStart = before2.lastIndexOf('\n') + 1;
+        const lineContent = textarea2.value.substring(lineStart);
+        const newText = before2.substring(0, lineStart) + '## ' + lineContent;
+        textarea2.value = newText;
+        textarea2.selectionStart = textarea2.selectionEnd = lineStart + 3;
+        textarea2.focus();
+        updatePreview();
+        return;
+    }
+    // Ctrl+Shift+3 标题3
+    if (ctrl && shift && e.key === '3') {
+        e.preventDefault();
+        const textarea2 = document.getElementById('editContent');
+        const start2 = textarea2.selectionStart;
+        const before2 = textarea2.value.substring(0, start2);
+        const lineStart = before2.lastIndexOf('\n') + 1;
+        const lineContent = textarea2.value.substring(lineStart);
+        const newText = before2.substring(0, lineStart) + '### ' + lineContent;
+        textarea2.value = newText;
+        textarea2.selectionStart = textarea2.selectionEnd = lineStart + 4;
+        textarea2.focus();
+        updatePreview();
+        return;
+    }
+    // Ctrl+U 无序列表 (用 - )
+    if (ctrl && e.key === 'u') {
+        e.preventDefault();
+        insertMarkdown('- ', '', true);
+        return;
+    }
+    // Ctrl+Shift+O 有序列表 (用 1. )
+    if (ctrl && shift && e.key === 'o') {
+        e.preventDefault();
+        insertMarkdown('1. ', '', true);
+        return;
+    }
+    // Ctrl+Shift+C 代码块
+    if (ctrl && shift && e.key === 'c') {
+        e.preventDefault();
+        insertMarkdown('```\n', '\n```');
+        return;
+    }
+    // Ctrl+Shift+Q 引用
+    if (ctrl && shift && e.key === 'q') {
+        e.preventDefault();
+        insertMarkdown('> ', '', true);
+        return;
+    }
+});
