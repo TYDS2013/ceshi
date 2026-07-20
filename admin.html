@@ -7,34 +7,213 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
     <style>
-        /* 与之前相同的样式，但去掉 auth-tabs 相关的，改用简单登录表单 */
-        /* ... 保留原有样式，增加用户管理区域样式 ... */
-        .user-item {
+        /* 后台专属样式 */
+        .admin-container { max-width: 1000px; margin: 0 auto; }
+        .admin-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+        .admin-card h3 { margin-bottom: 12px; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            background: var(--input-bg);
+            color: var(--text-primary);
+        }
+        .form-group textarea {
+            min-height: 200px;
+            font-family: monospace;
+        }
+        .btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: 0.15s;
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+        }
+        .btn-primary:hover { opacity: 0.8; }
+        .btn-danger {
+            background: #e11d48;
+            color: white;
+        }
+        .btn-danger:hover { background: #be123c; }
+        .btn-secondary {
+            background: var(--nav-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        .btn-secondary:hover { background: var(--border-color); }
+        .post-item-admin {
             display: flex;
             justify-content: space-between;
-            padding: 6px 0;
+            align-items: center;
+            padding: 8px 0;
             border-bottom: 1px solid var(--border-color);
         }
-        .user-item .del-btn {
-            color: #e11d48;
+        .post-item-admin .actions button {
+            margin-left: 8px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+        .modal.open { display: flex; }
+        .modal-content {
+            background: var(--bg-container);
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 30px;
+            border-radius: 24px;
+            position: relative;
+            border: 1px solid var(--border-color);
+        }
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 1.8rem;
             cursor: pointer;
+            color: var(--text-secondary);
             background: none;
             border: none;
         }
-        .user-item .del-btn:hover { opacity: 0.7; }
-        .admin-card .form-row {
+        .config-section {
+            background: var(--nav-bg);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        .config-section input {
+            width: 100%;
+            margin-top: 4px;
+        }
+        .status-msg {
+            padding: 8px 16px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .status-msg.success {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .status-msg.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        #previewArea {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            background: var(--input-bg);
+            margin-top: 8px;
+            min-height: 100px;
+        }
+        .editor-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 10px;
+        }
+        .editor-toolbar button {
+            background: var(--nav-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            padding: 4px 10px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+        }
+        .editor-toolbar button:hover {
+            background: var(--accent);
+            color: #fff;
+        }
+        #loginArea .status-msg {
+            margin-top: 10px;
+        }
+        #userList {
+            margin-top: 10px;
+        }
+        .user-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .user-item .user-actions button {
+            margin-left: 8px;
+        }
+        .user-item .admin-badge {
+            background: var(--accent);
+            color: #fff;
+            font-size: 0.7rem;
+            padding: 2px 10px;
+            border-radius: 30px;
+        }
+        .btn-small {
+            padding: 2px 12px;
+            font-size: 0.8rem;
+        }
+        .add-user-form {
             display: flex;
             gap: 12px;
             flex-wrap: wrap;
-            align-items: flex-end;
+            margin-bottom: 12px;
         }
-        .admin-card .form-row .form-group {
+        .add-user-form input {
             flex: 1;
-            min-width: 150px;
+            min-width: 120px;
+        }
+        .add-user-form button {
+            white-space: nowrap;
         }
     </style>
 </head>
 <body>
+<!-- 加载动画遮罩 -->
+<div id="loader">
+    <svg class="pl" width="240" height="240" viewBox="0 0 240 240">
+        <circle class="pl__ring pl__ring--a" cx="120" cy="120" r="105" fill="none" stroke="#000" stroke-width="20" stroke-dasharray="0 660" stroke-dashoffset="-330" stroke-linecap="round"></circle>
+        <circle class="pl__ring pl__ring--b" cx="120" cy="120" r="35" fill="none" stroke="#000" stroke-width="20" stroke-dasharray="0 220" stroke-dashoffset="-110" stroke-linecap="round"></circle>
+        <circle class="pl__ring pl__ring--c" cx="85" cy="120" r="70" fill="none" stroke="#000" stroke-width="20" stroke-dasharray="0 440" stroke-linecap="round"></circle>
+        <circle class="pl__ring pl__ring--d" cx="155" cy="120" r="70" fill="none" stroke="#000" stroke-width="20" stroke-dasharray="0 440" stroke-linecap="round"></circle>
+    </svg>
+</div>
+
 <div class="container admin-container">
     <div class="hero-image"><span>🔐 后台管理</span></div>
     <nav class="top-nav">
@@ -42,77 +221,56 @@
         <a href="all-articles.html">文章</a>
         <a href="about.html">关于</a>
         <a href="resources.html">资料</a>
-        
-        <span id="loginNav" style="margin-left:auto;">
-            <a href="login.html?redirect=当前页面路径" style="background:var(--accent); border:none; border-radius:30px; padding:4px 18px; cursor:pointer; color:#fff; font-weight:500; text-decoration:none;">登录</a>
-        </span>
+        <a href="404.html">404 Page</a>
+        <span id="loginNav" style="margin-left:auto;"></span>
     </nav>
 
-    <!-- 登录区域 (始终显示，登录后隐藏) -->
+    <!-- 登录区域 -->
     <div id="loginArea" class="admin-card">
         <h3>管理员登录</h3>
+        <div id="loginMsg" class="status-msg" style="display:none;"></div>
         <div class="form-group">
-            <label>用户名</label>
-            <input type="text" id="loginUsername" placeholder="用户名">
+            <label>账号</label>
+            <input type="text" id="loginUsername" placeholder="请输入管理员账号">
         </div>
         <div class="form-group">
             <label>密码</label>
-            <input type="password" id="loginPassword" placeholder="密码">
+            <input type="password" id="loginPassword" placeholder="请输入密码">
         </div>
-        <button class="btn btn-primary" onclick="handleLogin()">登录</button>
-        <div id="loginMsg" class="status-msg" style="display:none;"></div>
+        <button class="btn btn-primary" id="adminLoginBtn">登录</button>
     </div>
 
-    <!-- 后台主面板（登录后显示） -->
+    <!-- 仪表盘（登录后显示） -->
     <div id="dashboard" style="display:none;">
-        <!-- GitHub 配置 -->
-        <div class="admin-card config-section">
-            <h3>⚙️ GitHub 配置</h3>
-            <!-- 配置表单同上 -->
-            <div class="form-group">
-                <label>GitHub Token</label>
-                <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxx">
-            </div>
-            <div class="form-group">
-                <label>仓库 (owner/repo)</label>
-                <input type="text" id="repoInfo" placeholder="owner/repo">
-            </div>
-            <div class="form-group">
-                <label>分支</label>
-                <input type="text" id="repoBranch" value="main">
-            </div>
-            <button class="btn btn-primary" onclick="saveConfig()">保存配置</button>
-            <div id="configMsg" class="status-msg" style="display:none;"></div>
-        </div>
-
-        <!-- 用户管理 (仅管理员) -->
-        <div class="admin-card">
-            <h3>👥 用户管理</h3>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>新用户名</label>
-                    <input type="text" id="newUsername" placeholder="用户名">
-                </div>
-                <div class="form-group">
-                    <label>密码</label>
-                    <input type="password" id="newPassword" placeholder="密码">
-                </div>
-                <button class="btn btn-primary" onclick="addUser()">添加用户</button>
-            </div>
-            <div id="userList" style="margin-top:16px;"></div>
-            <div id="userMsg" class="status-msg" style="display:none;"></div>
-        </div>
-
         <!-- 用户管理 -->
         <div class="admin-card">
             <h3>👥 用户管理</h3>
-            <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
-                <input type="text" id="newUsername" placeholder="新用户名" style="flex:1; min-width:120px; padding:6px 12px; border:1px solid var(--border-color); border-radius:8px; background:var(--input-bg); color:var(--text-primary);">
-                <input type="password" id="newPassword" placeholder="密码" style="flex:1; min-width:120px; padding:6px 12px; border:1px solid var(--border-color); border-radius:8px; background:var(--input-bg); color:var(--text-primary);">
+            <div class="add-user-form">
+                <input type="text" id="newUsername" placeholder="新用户名">
+                <input type="password" id="newPassword" placeholder="密码">
                 <button class="btn btn-primary" onclick="addUser()">添加用户</button>
             </div>
-            <div id="userList"></div>
             <div id="userMsg" class="status-msg" style="display:none;"></div>
+            <div id="userList"></div>
+        </div>
+
+        <!-- GitHub 配置 -->
+        <div class="admin-card config-section">
+            <h3>⚙️ GitHub 配置（首次使用需设置）</h3>
+            <div id="configMsg" class="status-msg" style="display:none;"></div>
+            <div class="form-group">
+                <label>GitHub Token (需要有 repo 权限)</label>
+                <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxx">
+            </div>
+            <div class="form-group">
+                <label>仓库所有者/仓库名 (例如: yourname/blog)</label>
+                <input type="text" id="repoInfo" placeholder="owner/repo">
+            </div>
+            <div class="form-group">
+                <label>分支 (默认 main)</label>
+                <input type="text" id="repoBranch" value="main">
+            </div>
+            <button class="btn btn-primary" onclick="saveConfig()">保存配置</button>
         </div>
 
         <!-- 数据概览 -->
@@ -143,8 +301,60 @@
     <div class="footer">© 2026 我的个人博客 · 保留所有权利</div>
 </div>
 
-<!-- 文章编辑器模态框 (与之前相同) -->
-<div id="editorModal" class="modal"> ... </div>
+<!-- 文章编辑器模态框 -->
+<div id="editorModal" class="modal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeEditor()">&times;</button>
+        <h2 id="editorTitle">新建文章</h2>
+        <input type="hidden" id="editId">
+        <div id="editorMsg" class="status-msg" style="display:none;"></div>
+        <div class="form-group">
+            <label>标题 *</label>
+            <input type="text" id="editTitle" placeholder="文章标题">
+        </div>
+        <div class="form-group">
+            <label>日期 (YYYY-MM-DD)</label>
+            <input type="text" id="editDate" placeholder="2026-07-20">
+        </div>
+        <div class="form-group">
+            <label>分类</label>
+            <input type="text" id="editCategory" placeholder="tech / life / thinking">
+        </div>
+        <div class="form-group">
+            <label>标签 (逗号分隔)</label>
+            <input type="text" id="editTags" placeholder="Hugo, Go">
+        </div>
+        <div class="form-group">
+            <label>摘要</label>
+            <input type="text" id="editExcerpt" placeholder="简短摘要">
+        </div>
+        <div class="form-group">
+            <label>Markdown 正文 *</label>
+            <div class="editor-toolbar">
+                <button type="button" onclick="insertMarkdown('**', '**')" title="加粗"><b>B</b></button>
+                <button type="button" onclick="insertMarkdown('*', '*')" title="斜体"><i>I</i></button>
+                <button type="button" onclick="insertMarkdown('# ', '')" title="标题1">H1</button>
+                <button type="button" onclick="insertMarkdown('## ', '')" title="标题2">H2</button>
+                <button type="button" onclick="insertMarkdown('### ', '')" title="标题3">H3</button>
+                <button type="button" onclick="insertMarkdown('- ', '')" title="无序列表">•</button>
+                <button type="button" onclick="insertMarkdown('1. ', '')" title="有序列表">1.</button>
+                <button type="button" onclick="insertMarkdown('[', '](url)')" title="链接">🔗</button>
+                <button type="button" onclick="insertMarkdown('![', '](url)')" title="图片">🖼️</button>
+                <button type="button" onclick="insertMarkdown('```\n', '\n```')" title="代码块">{} </button>
+                <button type="button" onclick="insertMarkdown('> ', '')" title="引用">❝</button>
+            </div>
+            <textarea id="editContent" rows="12" placeholder="使用 Markdown 书写..."></textarea>
+        </div>
+        <div class="form-group">
+            <label>预览</label>
+            <div id="previewArea">预览将显示在这里</div>
+        </div>
+        <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:16px;">
+            <button class="btn btn-secondary" onclick="closeEditor()">取消</button>
+            <button class="btn btn-primary" id="savePostBtn" onclick="savePost()">保存并提交到 GitHub</button>
+        </div>
+    </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="js/common.js"></script>

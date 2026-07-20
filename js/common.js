@@ -1,5 +1,5 @@
 // =============================================
-// 公共功能：时间、主题、轮播、返回顶部、导航高亮 + 登录状态
+// 公共功能：时钟、主题、轮播、返回顶部、导航高亮、登录状态
 // =============================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -101,49 +101,54 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ----- 6. 登录状态 UI 更新 -----
     updateLoginUI();
+
+    // ----- 7. 加载动画隐藏（若存在）-----
+    const loader = document.getElementById('loader');
+    if (loader) {
+        // 如果页面已完全加载，立即隐藏；否则等待 load 事件
+        if (document.readyState === 'complete') {
+            loader.classList.add('hidden');
+        } else {
+            window.addEventListener('load', function() {
+                setTimeout(() => {
+                    loader.classList.add('hidden');
+                }, 300);
+            });
+        }
+    }
 });
 
 // =============================================
-// 用户管理工具（与后台共用 localStorage）
+// 用户管理工具（全局可用）
 // =============================================
-
-// 获取所有用户
-function getUsers() {
+window.getUsers = function() {
     const data = localStorage.getItem('users');
     return data ? JSON.parse(data) : {};
-}
-
-// 保存用户
-function saveUsers(users) {
+};
+window.saveUsers = function(users) {
     localStorage.setItem('users', JSON.stringify(users));
-}
-
-// SHA-256 哈希（用于密码验证）
-async function hashPassword(password) {
+};
+window.hashPassword = async function(password) {
     const encoder = new TextEncoder();
     const data = encoder.encode(password);
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
+};
 
 // =============================================
-// 导航栏登录状态显示（更新 #loginNav）
+// 导航栏登录状态显示
 // =============================================
-
 function updateLoginUI() {
     const loginNav = document.getElementById('loginNav');
     if (!loginNav) return;
-
     const user = sessionStorage.getItem('loginUser');
     if (user) {
-        // 已登录：显示用户名 + 退出按钮
         loginNav.innerHTML = `
             <span style="color:var(--text-secondary); margin-right:12px;">👤 ${user}</span>
             <button onclick="logoutUser()" style="background:transparent; border:1px solid var(--border-color); border-radius:30px; padding:4px 14px; cursor:pointer; color:var(--text-secondary);">退出</button>
         `;
     } else {
-        // 未登录：显示登录链接（跳转到 login.html，并携带当前页面作为重定向参数）
         const currentPath = window.location.pathname.split('/').pop() || 'index.html';
         loginNav.innerHTML = `
             <a href="login.html?redirect=${encodeURIComponent(currentPath)}" style="background:var(--accent); border:none; border-radius:30px; padding:4px 18px; cursor:pointer; color:#fff; font-weight:500; text-decoration:none;">登录</a>
@@ -151,32 +156,13 @@ function updateLoginUI() {
     }
 }
 
-// 退出登录
 function logoutUser() {
     sessionStorage.removeItem('loginUser');
     sessionStorage.removeItem('isAdmin');
     updateLoginUI();
-    // 可选：刷新页面以更新所有组件状态
     location.reload();
 }
 
-// 初始化默认管理员（仅在后台 admin.js 中使用，但为保证函数存在，这里也定义）
-// 但此函数在 common.js 中并非必须，可保留为占位，实际上 admin.js 已独立初始化。
-// 如果需要，可保留空函数或由 admin.js 自行处理。
-// 为减少冗余，此处不再重复 initDefaultUser。
-
-
-// ----- 隐藏加载动画 -----
-window.addEventListener('load', function() {
-    const loader = document.getElementById('loader');
-    if (loader) {
-        setTimeout(() => {
-            loader.classList.add('hidden');
-        }, 300); // 延迟 300ms 让过渡更平滑
-    }
-});
-// 若 load 事件已触发（缓存情况），直接隐藏
-if (document.readyState === 'complete') {
-    const loader = document.getElementById('loader');
-    if (loader) loader.classList.add('hidden');
-}
+// 确保函数暴露到全局
+window.updateLoginUI = updateLoginUI;
+window.logoutUser = logoutUser;
