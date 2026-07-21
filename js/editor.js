@@ -1,14 +1,21 @@
 // =============================================
-// 独立编辑器逻辑（含 Typora 风格快捷键）
+// 独立 Markdown 编辑器逻辑
+// 功能：加载/保存文章、本地缓存、Typora 风格快捷键、实时预览
 // =============================================
 
-let currentPostId = null;
-let currentFile = null;
+// ----- 全局状态 -----
+let currentPostId = null;          // 当前编辑的文章ID
+let currentFile = null;            // 对应的 .md 文件名
 let githubConfig = { token: '', repo: '', branch: 'main' };
-let sourceMode = false;
-let wordWrap = true;
+let sourceMode = false;            // 源码模式（隐藏预览）
+let wordWrap = true;              // 自动换行
+let isUsingLocal = false;         // 是否使用本地缓存
 
-// ----- 配置加载 -----
+// =============================================
+// 1. 配置与加载
+// =============================================
+
+/** 加载 GitHub 配置（从 localStorage） */
 function loadConfig() {
     const saved = localStorage.getItem('githubConfig');
     if (saved) {
@@ -18,7 +25,7 @@ function loadConfig() {
     }
 }
 
-// ----- 加载文章 -----
+/** 加载文章（优先网络，回退本地缓存） */
 async function loadEditor() {
     loadConfig();
     const params = new URLSearchParams(window.location.search);
@@ -29,27 +36,71 @@ async function loadEditor() {
     }
     currentPostId = id;
 
+    // 尝试从 GitHub 获取最新数据
     try {
         const res = await fetch('post/posts.json?' + Date.now());
         const posts = await res.json();
         const post = posts.find(p => p.id == id);
-        if (!post) {
-            document.getElementById('editorTitle').textContent = '❌ 文章未找到';
+        if (post) {
+            await loadPostData(post);
+            // 清除本地缓存（已同步）
+            localStorage.removeItem('newPost_' + id);
+            localStorage.removeItem('newPostContent_' + id);
             return;
         }
-        currentFile = post.file;
-        document.getElementById('editorTitle').textContent = `📝 编辑：${post.title}`;
-        const mdRes = await fetch(`post/${post.file}`);
-        const mdText = await mdRes.text();
-        document.getElementById('editorContent').value = mdText;
-        updatePreview();
     } catch(e) {
-        console.error('加载文章失败', e);
-        document.getElementById('editorTitle').textContent = '❌ 加载失败';
+        console.warn('网络加载失败，尝试本地缓存', e);
     }
+
+    // 网络未找到，检查本地缓存
+    const localPost = localStorage.getItem('newPost_' + id);
+    const localContent = localStorage.getItem('newPostContent_' + id);
+    if (localPost && localContent) {
+        const post = JSON.parse(localPost);
+        isUsingLocal = true;
+        document.getElementById('editorTitle').textContent = `📝 编辑：${post.title} (本地缓存)`;
+        document.getElementById('editorContent').value = localContent;
+        updatePreview();
+        showMsg('editorMsg', '⏳ 文章正在同步到服务器，请稍候...', 'success');
+        // 3秒后尝试重新从网络加载
+        setTimeout(async () => {
+            try {
+                const res = await fetch('post/posts.json?' + Date.now());
+                const posts = await res.json();
+                const updated = posts.find(p => p.id == id);
+                if (updated) {
+                    document.getElementById('editorTitle').textContent = `📝 编辑：${updated.title}`;
+                    isUsingLocal = false;
+                    showMsg('editorMsg', '✅ 文章已同步到服务器', 'success');
+                    localStorage.removeItem('newPost_' + id);
+                    localStorage.removeItem('newPostContent_' + id);
+                }
+            } catch(e) {}
+        }, 3000);
+        return;
+    }
+
+    // 都没有，报错
+    document.getElementById('editorTitle').textContent = '❌ 文章未找到';
+    showMsg('editorMsg', '❌ 无法加载文章，请检查网络或重新创建', 'error');
 }
 
-// ----- 预览更新 -----
+/** 从网络加载文章数据 */
+async function loadPostData(post) {
+    currentFile = post.file;
+    document.getElementById('editorTitle').textContent = `📝 编辑：${post.title}`;
+    const mdRes = await fetch(`post/${post.file}`);
+    const mdText = await mdRes.text();
+    document.getElementById('editorContent').value = mdText;
+    updatePreview();
+    isUsingLocal = false;
+}
+
+// =============================================
+// 2. 预览与工具栏
+// =============================================
+
+/** 更新预览区 */
 function updatePreview() {
     const content = document.getElementById('editorContent').value;
     try {
@@ -59,14 +110,10 @@ function updatePreview() {
     }
 }
 
-// =============================================
-// 工具栏插入函数（核心）
-// =============================================
-
 /**
- * 在编辑器中插入 Markdown 语法
- * @param {string} prefix - 前缀（如 '**'）
- * @param {string} suffix - 后缀（如 '**'）
+ * 插入 Markdown 语法（工具栏与快捷键共用）
+ * @param {string} prefix - 前缀
+ * @param {string} suffix - 后缀
  * @param {boolean} lineStart - 是否插入到行首
  */
 function insertMarkdown(prefix, suffix, lineStart = false) {
@@ -79,9 +126,7 @@ function insertMarkdown(prefix, suffix, lineStart = false) {
     const before = textarea.value.substring(0, start);
     const after = textarea.value.substring(end);
 
-    let insertText = '';
     if (lineStart) {
-        // 获取当前行起始位置
         const lineStartPos = before.lastIndexOf('\n') + 1;
         const lineContent = textarea.value.substring(lineStartPos);
         const newLine = prefix + lineContent;
@@ -89,12 +134,12 @@ function insertMarkdown(prefix, suffix, lineStart = false) {
         const newCursor = lineStartPos + prefix.length;
         textarea.selectionStart = textarea.selectionEnd = newCursor;
     } else if (selected) {
-        insertText = prefix + selected + suffix;
+        const insertText = prefix + selected + suffix;
         textarea.value = before + insertText + after;
         const newCursor = start + insertText.length;
         textarea.selectionStart = textarea.selectionEnd = newCursor;
     } else {
-        insertText = prefix + suffix;
+        const insertText = prefix + suffix;
         textarea.value = before + insertText + after;
         const newCursor = start + prefix.length;
         textarea.selectionStart = textarea.selectionEnd = newCursor;
@@ -104,11 +149,10 @@ function insertMarkdown(prefix, suffix, lineStart = false) {
     updatePreview();
 }
 
-// ----- 插入表格 (Ctrl+T) -----
+/** 插入表格 (Ctrl+T) */
 function insertTable() {
     const textarea = document.getElementById('editorContent');
     if (!textarea) return;
-
     const table = `
 | 列1 | 列2 | 列3 |
 |-----|-----|-----|
@@ -119,17 +163,16 @@ function insertTable() {
     const before = textarea.value.substring(0, start);
     const after = textarea.value.substring(start);
     textarea.value = before + table + after;
-    const newCursor = start + table.length;
-    textarea.selectionStart = textarea.selectionEnd = newCursor;
+    textarea.selectionStart = textarea.selectionEnd = start + table.length;
     textarea.focus();
     updatePreview();
 }
 
-// ----- 视图切换 -----
+/** 切换源码/预览模式 */
 function toggleSourceMode() {
     sourceMode = !sourceMode;
-    const textarea = document.getElementById('editorContent');
     const preview = document.getElementById('previewArea');
+    const textarea = document.getElementById('editorContent');
     if (sourceMode) {
         preview.style.display = 'none';
         textarea.style.flex = '2';
@@ -139,6 +182,7 @@ function toggleSourceMode() {
     }
 }
 
+/** 切换自动换行 */
 function toggleWordWrap() {
     wordWrap = !wordWrap;
     const textarea = document.getElementById('editorContent');
@@ -146,13 +190,8 @@ function toggleWordWrap() {
     textarea.style.overflowX = wordWrap ? 'auto' : 'scroll';
 }
 
-// ----- 实时预览（输入时触发）-----
-document.addEventListener('input', function(e) {
-    if (e.target && e.target.id === 'editorContent') updatePreview();
-});
-
 // =============================================
-// 键盘快捷键（Typora 风格）
+// 3. 键盘快捷键（Typora 风格）
 // =============================================
 
 document.addEventListener('keydown', function(e) {
@@ -163,47 +202,46 @@ document.addEventListener('keydown', function(e) {
     const shift = e.shiftKey;
     const alt = e.altKey;
 
-    // ---- 标题 (Ctrl+1~6) ----
+    // 标题 (Ctrl+1~6)
     if (ctrl && !shift && !alt && e.key >= '1' && e.key <= '6') {
         e.preventDefault();
         const level = '#'.repeat(parseInt(e.key));
         insertMarkdown(level + ' ', '', true);
         return;
     }
-    // Ctrl+0 清除标题
     if (ctrl && !shift && !alt && e.key === '0') {
         e.preventDefault();
         insertMarkdown('', '', true);
         return;
     }
 
-    // ---- 格式 ----
+    // 格式
     if (ctrl && !shift && !alt && e.key === 'b') { e.preventDefault(); insertMarkdown('**', '**'); return; }
     if (ctrl && !shift && !alt && e.key === 'i') { e.preventDefault(); insertMarkdown('*', '*'); return; }
     if (ctrl && !shift && !alt && e.key === 'u') { e.preventDefault(); insertMarkdown('<u>', '</u>'); return; }
     if (ctrl && shift && !alt && e.key === '`') { e.preventDefault(); insertMarkdown('`', '`'); return; }
     if (alt && shift && e.key === '5') { e.preventDefault(); insertMarkdown('~~', '~~'); return; }
 
-    // ---- 列表 ----
+    // 列表
     if (ctrl && shift && !alt && e.key === '[') { e.preventDefault(); insertMarkdown('1. ', '', true); return; }
     if (ctrl && shift && !alt && e.key === ']') { e.preventDefault(); insertMarkdown('- ', '', true); return; }
     if (ctrl && shift && !alt && e.key === 'q') { e.preventDefault(); insertMarkdown('> ', '', true); return; }
 
-    // ---- 插入 ----
+    // 插入
     if (ctrl && !shift && !alt && e.key === 'k') { e.preventDefault(); insertMarkdown('[', '](url)'); return; }
     if (ctrl && shift && !alt && e.key === 'i') { e.preventDefault(); insertMarkdown('![', '](url)'); return; }
     if (ctrl && shift && !alt && e.key === 'k') { e.preventDefault(); insertMarkdown('```\n', '\n```'); return; }
     if (ctrl && shift && !alt && e.key === 'm') { e.preventDefault(); insertMarkdown('$$\n', '\n$$'); return; }
     if (ctrl && !shift && !alt && e.key === 't') { e.preventDefault(); insertTable(); return; }
 
-    // ---- 视图 ----
+    // 视图
     if (ctrl && !shift && !alt && e.key === '/') { e.preventDefault(); toggleSourceMode(); return; }
 
-    // ---- 缩进 (Tab / Shift+Tab) ----
+    // Tab 缩进
     if (e.key === 'Tab') {
         e.preventDefault();
         if (shift) {
-            insertMarkdown('', '', true); // 简单处理：清除行首空格
+            insertMarkdown('', '', true);
         } else {
             insertMarkdown('  ', '', true);
         }
@@ -211,10 +249,16 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
+// 实时预览（输入时触发）
+document.addEventListener('input', function(e) {
+    if (e.target && e.target.id === 'editorContent') updatePreview();
+});
+
 // =============================================
-// 保存内容（GitHub API）
+// 4. 保存到 GitHub + 本地缓存
 // =============================================
 
+/** 保存文章内容 */
 async function saveEditorContent() {
     const content = document.getElementById('editorContent').value;
     if (!content.trim()) {
@@ -229,9 +273,21 @@ async function saveEditorContent() {
     const btn = document.getElementById('saveEditorBtn');
     btn.disabled = true;
     btn.textContent = '提交中...';
+
     try {
         await updateFileOnGitHub(`post/${currentFile}`, content, `更新文章内容 ${currentFile}`);
+        // 更新本地缓存（如有）
+        if (isUsingLocal) {
+            localStorage.setItem('newPostContent_' + currentPostId, content);
+        }
         showMsg('editorMsg', '✅ 保存成功，Pages 将自动重新部署', 'success');
+        if (isUsingLocal) {
+            localStorage.removeItem('newPost_' + currentPostId);
+            localStorage.removeItem('newPostContent_' + currentPostId);
+            isUsingLocal = false;
+            const titleEl = document.getElementById('editorTitle');
+            titleEl.textContent = titleEl.textContent.replace(' (本地缓存)', '');
+        }
     } catch(err) {
         showMsg('editorMsg', '❌ 保存失败：' + err.message, 'error');
     } finally {
@@ -240,7 +296,7 @@ async function saveEditorContent() {
     }
 }
 
-// ----- GitHub API 更新文件 -----
+/** GitHub API 更新文件（复用 admin.js 逻辑） */
 async function updateFileOnGitHub(path, content, commitMsg) {
     if (!githubConfig.token || !githubConfig.repo) {
         throw new Error('请配置 GitHub Token 和仓库信息');
@@ -288,7 +344,7 @@ async function updateFileOnGitHub(path, content, commitMsg) {
     return await putRes.json();
 }
 
-// ----- 消息提示 -----
+/** 显示消息 */
 function showMsg(elementId, text, type) {
     const el = document.getElementById(elementId);
     el.textContent = text;
@@ -297,19 +353,23 @@ function showMsg(elementId, text, type) {
     setTimeout(() => { el.style.display = 'none'; }, 5000);
 }
 
-// ----- 初始化 -----
+// =============================================
+// 5. 初始化
+// =============================================
+
 document.addEventListener('DOMContentLoaded', function() {
+    // 检查后台登录状态
     if (!sessionStorage.getItem('adminLogged')) {
         alert('请先登录后台');
         window.location.href = 'admin.html';
         return;
     }
     loadEditor();
-    // 设置初始换行模式
+    // 默认开启自动换行
     document.getElementById('editorContent').style.whiteSpace = 'pre-wrap';
 });
 
-// 暴露全局函数给 HTML onclick 调用
+// 暴露全局函数供 HTML onclick 调用
 window.insertMarkdown = insertMarkdown;
 window.insertTable = insertTable;
 window.toggleSourceMode = toggleSourceMode;

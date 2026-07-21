@@ -1,8 +1,9 @@
 // =============================================
 // 后台管理逻辑（完整版）
+// 功能：管理员白名单登录、用户管理、文章管理、GitHub 同步、本地缓存
 // =============================================
 
-// ----- 管理员白名单 -----
+// ----- 管理员白名单（只有以下用户可登录后台）-----
 const ADMIN_ALLOWLIST = ['TYDS2013'];
 
 // ----- 用户管理工具（与 common.js 共用，提供后备）-----
@@ -23,7 +24,13 @@ if (typeof getUsers === 'undefined') {
     };
 }
 
-// ----- 初始化默认管理员（仅当无用户时）-----
+// ----- GitHub 配置 -----
+let githubConfig = { token: '', repo: '', branch: 'main' };
+let postsData = [];
+
+// =============================================
+// 1. 初始化默认管理员（仅当无用户时）
+// =============================================
 async function initDefaultUser() {
     const users = getUsers();
     if (Object.keys(users).length === 0) {
@@ -34,10 +41,9 @@ async function initDefaultUser() {
     }
 }
 
-// ----- GitHub 配置 -----
-let githubConfig = { token: '', repo: '', branch: 'main' };
-let postsData = [];
-
+// =============================================
+// 2. GitHub 配置
+// =============================================
 function loadConfig() {
     const saved = localStorage.getItem('githubConfig');
     if (saved) {
@@ -65,6 +71,9 @@ function saveConfig() {
     showMsg('configMsg', '配置已保存', 'success');
 }
 
+// =============================================
+// 3. 消息提示
+// =============================================
 function showMsg(elementId, text, type) {
     const el = document.getElementById(elementId);
     if (!el) return;
@@ -74,7 +83,9 @@ function showMsg(elementId, text, type) {
     setTimeout(() => { el.style.display = 'none'; }, 5000);
 }
 
-// ----- 后台登录（仅白名单）-----
+// =============================================
+// 4. 后台登录（仅白名单用户）
+// =============================================
 async function handleAdminLogin() {
     const username = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value.trim();
@@ -112,7 +123,9 @@ function logoutAdmin() {
     document.getElementById('dashboard').style.display = 'none';
 }
 
-// ----- 用户管理（仅管理员可见）-----
+// =============================================
+// 5. 用户管理（仅管理员可见）
+// =============================================
 function renderUserList() {
     const users = getUsers();
     const container = document.getElementById('userList');
@@ -167,33 +180,35 @@ function deleteUser(username) {
     showMsg('userMsg', '用户已删除', 'success');
 }
 
-// ----- 仪表盘更新（最近3篇文章 + 文章管理）-----
+// =============================================
+// 6. 仪表盘更新（最近3篇文章 + 文章管理）
+// =============================================
 async function updateDashboard() {
     try {
         const res = await fetch('post/posts.json?' + Date.now());
         postsData = await res.json();
-        const views = JSON.parse(localStorage.getItem('views') || '{}');
-
-        // ---- 数据概览：最近3篇文章 ----
-        const sorted = [...postsData].sort((a, b) => new Date(b.date) - new Date(a.date));
-        const recent = sorted.slice(0, 3);
-        const container = document.getElementById('recentPosts');
-        if (!recent.length) {
-            container.innerHTML = '<p>暂无文章</p>';
-        } else {
-            container.innerHTML = recent.map(p => `
-                <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border-color);">
-                    <span><strong>${p.title}</strong> (${p.date})</span>
-                    <span>👁️ ${views[p.id] || 0} 次浏览</span>
-                </div>
-            `).join('');
-        }
-
-        // ---- 文章管理列表 ----
+        updateRecentPosts();
         renderPostList();
     } catch(e) {
         console.error('更新仪表盘失败', e);
         document.getElementById('adminPostList').innerHTML = '<p>加载失败</p>';
+    }
+}
+
+function updateRecentPosts() {
+    const views = JSON.parse(localStorage.getItem('views') || '{}');
+    const sorted = [...postsData].sort((a, b) => new Date(b.date) - new Date(a.date));
+    const recent = sorted.slice(0, 3);
+    const container = document.getElementById('recentPosts');
+    if (!recent.length) {
+        container.innerHTML = '<p>暂无文章</p>';
+    } else {
+        container.innerHTML = recent.map(p => `
+            <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border-color);">
+                <span><strong>${p.title}</strong> (${p.date})</span>
+                <span>👁️ ${views[p.id] || 0} 次浏览</span>
+            </div>
+        `).join('');
     }
 }
 
@@ -214,7 +229,9 @@ function renderPostList() {
     `).join('');
 }
 
-// ----- 新建文章（跳转编辑器）-----
+// =============================================
+// 7. 新建文章（先保存本地，再异步上传）
+// =============================================
 async function createAndEdit() {
     const title = document.getElementById('newTitle').value.trim();
     const date = document.getElementById('newDate').value.trim() || new Date().toISOString().slice(0,10);
@@ -229,6 +246,7 @@ async function createAndEdit() {
     const maxId = postsData.reduce((max, p) => Math.max(max, p.id), 0);
     const newId = maxId + 1;
     const file = newId + '.md';
+    const defaultContent = '# ' + title + '\n\n开始书写...';
 
     const newPost = {
         id: newId,
@@ -241,16 +259,24 @@ async function createAndEdit() {
         author: adminUser
     };
 
-    postsData.push(newPost);
-    const jsonContent = JSON.stringify(postsData, null, 4);
+    // 1. 先保存到本地 localStorage
+    localStorage.setItem('newPost_' + newId, JSON.stringify(newPost));
+    localStorage.setItem('newPostContent_' + newId, defaultContent);
 
-    try {
-        await updateFileOnGitHub('post/posts.json', jsonContent, `新建文章: ${title}`);
-        await updateFileOnGitHub(`post/${file}`, '# ' + title + '\n\n开始书写...', `初始化文章 ${title}`);
-        window.location.href = `editor.html?id=${newId}`;
-    } catch(err) {
-        showMsg('newPostMsg', '创建失败：' + err.message, 'error');
-    }
+    // 2. 更新内存中的 postsData
+    postsData.push(newPost);
+
+    // 3. 异步上传到 GitHub（不等待，立即跳转）
+    const jsonContent = JSON.stringify(postsData, null, 4);
+    updateFileOnGitHub('post/posts.json', jsonContent, `新建文章: ${title}`)
+        .then(() => console.log('元数据上传成功'))
+        .catch(err => console.error('元数据上传失败', err));
+    updateFileOnGitHub(`post/${file}`, defaultContent, `初始化文章 ${title}`)
+        .then(() => console.log('内容上传成功'))
+        .catch(err => console.error('内容上传失败', err));
+
+    // 4. 立即跳转到编辑器
+    window.location.href = `editor.html?id=${newId}`;
 }
 
 // ----- 新建标签（添加到下拉框）-----
@@ -273,27 +299,62 @@ function addNewTag() {
     input.value = '';
 }
 
-// ----- 删除文章 -----
+// =============================================
+// 8. 删除文章（立即本地删除，异步远程删除）
+// =============================================
 async function deletePost(id) {
     if (!confirm('确定要删除这篇文章吗？')) return;
+
     const post = postsData.find(p => p.id === id);
     if (!post) return;
+
+    // 1. 从本地数据中移除
     const index = postsData.indexOf(post);
     postsData.splice(index, 1);
+
+    // 2. 立即更新 UI
+    renderPostList();
+    updateRecentPosts();
+
+    // 3. 清理 localStorage 中该文章的数据
+    removeLocalPostData(id);
+
+    // 4. 异步删除 GitHub 上的文件
     const jsonContent = JSON.stringify(postsData, null, 4);
     try {
         await updateFileOnGitHub('post/posts.json', jsonContent, `删除文章 ${post.title}`);
         try {
             await updateFileOnGitHub(`post/${post.file}`, '', `删除文章内容 ${post.title}`);
-        } catch(e) {}
-        await updateDashboard();
-        alert('文章已删除');
+        } catch(e) {
+            console.warn('删除 .md 文件失败（可能已被删除）', e);
+        }
+        alert('文章已从本地和仓库删除，Pages 将自动重新部署。');
     } catch(err) {
-        alert('删除失败：' + err.message);
+        console.error('远程删除失败', err);
+        alert('文章已从本地删除，但远程删除失败（可能网络问题）。请稍后检查仓库或重试。');
+    }
+
+    // 5. 清理本地缓存的新文章标记（如有）
+    localStorage.removeItem('newPost_' + id);
+    localStorage.removeItem('newPostContent_' + id);
+}
+
+function removeLocalPostData(id) {
+    const views = JSON.parse(localStorage.getItem('views') || '{}');
+    if (views[id]) {
+        delete views[id];
+        localStorage.setItem('views', JSON.stringify(views));
+    }
+    const comments = JSON.parse(localStorage.getItem('comments') || '{}');
+    if (comments[id]) {
+        delete comments[id];
+        localStorage.setItem('comments', JSON.stringify(comments));
     }
 }
 
-// ----- GitHub API 辅助 -----
+// =============================================
+// 9. GitHub API 辅助（更新文件）
+// =============================================
 async function updateFileOnGitHub(path, content, commitMsg) {
     if (!githubConfig.token || !githubConfig.repo) {
         throw new Error('请先在后台配置 GitHub Token 和仓库信息');
@@ -341,7 +402,9 @@ async function updateFileOnGitHub(path, content, commitMsg) {
     return await putRes.json();
 }
 
-// ----- 初始化 -----
+// =============================================
+// 10. 初始化
+// =============================================
 document.addEventListener('DOMContentLoaded', async function() {
     await initDefaultUser();
 
@@ -357,7 +420,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (loginBtn) loginBtn.addEventListener('click', handleAdminLogin);
 });
 
-// 暴露全局函数
+// ----- 暴露全局函数供 HTML 调用 -----
 window.handleAdminLogin = handleAdminLogin;
 window.logoutAdmin = logoutAdmin;
 window.addUser = addUser;
