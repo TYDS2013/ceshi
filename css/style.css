@@ -307,14 +307,99 @@ a:hover { color: var(--accent-hover); }
     border: 1px solid var(--border-color);
 }
 
-/* ===== 底部 ===== */
+
+/* ===== 底部（新布局） ===== */
 .footer {
     margin-top: 50px;
-    padding-top: 20px;
+    padding-top: 24px;
     border-top: 1px solid var(--border-color);
-    text-align: center;
     color: var(--text-secondary);
     font-size: 0.9rem;
+}
+
+.footer-inner {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px 40px;
+}
+
+/* 左侧：版权、更新时间、主题切换 */
+.footer-left {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 20px;
+}
+
+.footer-copyright,
+.footer-update {
+    font-size: 0.9rem;
+}
+
+.footer-update {
+    font-size: 0.85rem;
+    opacity: 0.7;
+}
+
+/* 右侧：链接分组 */
+.footer-right {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+}
+
+.footer-group {
+    min-width: 100px;
+}
+
+.footer-group-title {
+    font-size: 1.1rem;  /* 稍大 */
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--text-primary);
+}
+
+.footer-group-links {
+    list-style: none;
+    padding-left: 20px;  /* 缩进 */
+    margin: 0;
+}
+
+.footer-group-links li {
+    margin: 3px 0;
+}
+
+.footer-group-links a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+}
+
+.footer-group-links a:hover {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .footer-inner {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    .footer-left {
+        justify-content: center;
+    }
+    .footer-right {
+        justify-content: center;
+    }
+    .footer-group-links {
+        padding-left: 0;  /* 移动端取消缩进 */
+        text-align: center;
+    }
 }
 .footer .update-date {
     font-size: 0.8rem;
@@ -585,4 +670,19 @@ a:hover { color: var(--accent-hover); }
 [data-theme="dark"] .footer-links a {
     background: var(--accent);
     color: #fff !important;
+}
+
+
+/* ===== 文章元数据图标与文字对齐 ===== */
+.post-card .meta span,
+.article-meta span,
+#articleMeta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.post-card .meta svg,
+.article-meta svg,
+#articleMeta svg {
+    vertical-align: middle;
 }

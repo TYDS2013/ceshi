@@ -6,6 +6,7 @@
     <title>城建一局</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
+    <script src="js/topbar.js"></script>
 </head>
 <body>
 <!-- 加载动画遮罩 -->
@@ -31,9 +32,7 @@
     </span>
 </div>
 <!-- 这里只有一个 </div>，导航直接跟在后面，无空隙 -->
-<nav class="top-nav">
-    <!-- 导航链接 -->
-</nav>
+
 
     <!-- 导航 -->
     <nav class="top-nav">
@@ -88,29 +87,42 @@
 
     <!-- 底部 -->
 <div class="footer">
-    <div class="footer-content">
-        <span>
-            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px; color:var(--text-secondary);">
-                <path stroke="none" d="M0 0h24v24H0z"/>
-                <circle cx="12" cy="12" r="9" />
-                <path d="M14.5 9a3.5 4 0 1 0 0 6" />
-            </svg>
-            2026 城建一局
-        </span>
-        <div class="theme-switch-wrapper">
-            <span class="theme-label">🌙</span>
-            <label class="theme-switch">
-                <input type="checkbox" id="themeToggleCheckbox">
-                <span class="slider"></span>
-            </label>
-            <span class="theme-label">☀️</span>
+    <div class="footer-inner">
+        <!-- 左侧：版权 + 更新时间 + 主题切换 -->
+        <div class="footer-left">
+            <div class="footer-copyright">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px; color:var(--text-secondary);">
+                    <path stroke="none" d="M0 0h24v24H0z"/>
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+                </svg>
+                 2026 城建一局
+            </div>
+            <div class="footer-update">
+                最后更新：<span id="updateDate"></span>
+            </div>
+            <div class="theme-switch-wrapper">
+                <span class="theme-label">🌙</span>
+                <label class="theme-switch">
+                    <input type="checkbox" id="themeToggleCheckbox">
+                    <span class="slider"></span>
+                </label>
+                <span class="theme-label">☀️</span>
+            </div>
+        </div>
+
+        <!-- 右侧：链接分组 -->
+        <div class="footer-right">
+            <div class="footer-group">
+                <div class="footer-group-title">翠林城</div>
+                <ul class="footer-group-links">
+                    <li><a href="clcity-map/index.html" target="_blank">地图</a></li>
+                    <!-- 未来可在此添加更多子链接，如“建筑”、“路线”等 -->
+                </ul>
+            </div>
+            <!-- 可添加更多分组，如“社区”、“帮助”等 -->
         </div>
     </div>
-    <!-- 地图链接 -->
-    <div class="footer-links">
-        <a href="clcity-map/index.html" target="_blank">🗺️ 查看地图</a>
-    </div>
-    <div class="update-date">最后更新：<span id="updateDate"></span></div>
 </div>
 
 <div id="backTop">↑</div>
